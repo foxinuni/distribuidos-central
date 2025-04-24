@@ -26,3 +26,14 @@ type AllocateResponse struct {
 
 	Programs []ProgramAllocation `json:"programs"`
 }
+
+type ConfirmRequest struct {
+	Semester string `json:"semester"`
+	Faculty  string `json:"faculty"`
+	Accept   bool   `json:"accept"`
+}
+
+type ConfirmResponse struct {
+	Semester string `json:"semester"`
+	Faculty  string `json:"faculty"`
+}

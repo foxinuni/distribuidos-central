@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/foxinuni/distribuidos-central/internal/models"
 	"github.com/foxinuni/distribuidos-central/internal/repository"
@@ -10,6 +11,7 @@ import (
 
 type AllocationService interface {
 	Allocate(ctx context.Context, request *models.AllocateRequest) (*models.AllocateResponse, error)
+	Confirm(ctx context.Context, request *models.ConfirmRequest) (*models.ConfirmResponse, error)
 }
 
 type SqlcAllocationService struct {
@@ -99,6 +101,32 @@ func (s *SqlcAllocationService) Allocate(ctx context.Context, request *models.Al
 	// 5. Commit the transaction
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
+	}
+
+	return response, nil
+}
+
+func (s *SqlcAllocationService) Confirm(ctx context.Context, request *models.ConfirmRequest) (*models.ConfirmResponse, error) {
+	// 1. Check that the client accepted
+	if !request.Accept {
+		return nil, fmt.Errorf("expected accept to be true")
+	}
+
+	// 2. Create new querier
+	querier := repository.New(s.pool)
+
+	// 3. Confirm allocation
+	if err := querier.LockRooms(ctx, repository.LockRoomsParams{
+		FacultyName:  request.Faculty,
+		SemesterName: request.Semester,
+	}); err != nil {
+		return nil, err
+	}
+
+	// 4. Generate response
+	response := &models.ConfirmResponse{
+		Semester: request.Semester,
+		Faculty:  request.Faculty,
 	}
 
 	return response, nil

@@ -93,6 +93,7 @@ BEGIN
               WHERE semester = _semester
           )
         ORDER BY r.id
+        FOR UPDATE SKIP LOCKED
         LIMIT _count
     LOOP
         -- Insert allocation
@@ -134,6 +135,7 @@ BEGIN
               SELECT room_id FROM room_allocations WHERE semester = _semester
           )
         ORDER BY r.id
+        FOR UPDATE SKIP LOCKED
         LIMIT _count
     LOOP
         INSERT INTO room_allocations (
@@ -154,6 +156,7 @@ BEGIN
                   SELECT room_id FROM room_allocations WHERE semester = _semester
               )
             ORDER BY r.id
+            FOR UPDATE SKIP LOCKED
             LIMIT (_count - allocated_count)
         LOOP
             INSERT INTO room_allocations (

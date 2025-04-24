@@ -29,3 +29,13 @@ func (c *AllocationsController) Allocate(body interface{}) (interface{}, error) 
 	log.Info().Msgf("Received AllocateRequest: %+v", req)
 	return c.service.Allocate(context.Background(), req)
 }
+
+func (c *AllocationsController) Confirm(body interface{}) (interface{}, error) {
+	req := &models.ConfirmRequest{}
+	if err := mapstructure.Decode(body, req); err != nil {
+		return nil, fmt.Errorf("failed to decode request: %w", err)
+	}
+
+	log.Info().Msgf("Received ConfirmRequest: %+v", req)
+	return c.service.Confirm(context.Background(), req)
+}

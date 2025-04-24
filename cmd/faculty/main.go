@@ -2,7 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"math/rand/v2"
 	"os"
+	"sync"
 
 	"github.com/foxinuni/distribuidos-central/internal/models"
 	"github.com/foxinuni/distribuidos-central/internal/services"
@@ -15,9 +18,8 @@ var config Config
 
 func init() {
 	flag.IntVar(&config.Port, "port", 5555, "Port to listen on")
-	flag.IntVar(&config.Programs, "programs", 10, "Number of programs")
-	flag.IntVar(&config.Classrooms, "classrooms", 10, "Number of classrooms")
-	flag.IntVar(&config.Laboratories, "laboratories", 10, "Number of laboratories")
+	flag.IntVar(&config.Faculties, "faculties", 10, "Number of facultires")
+	flag.StringVar(&config.Address, "address", "tcp://127.0.0.1:5555", "The server address")
 	flag.Parse()
 
 	// Set up zerolog logger for debug and pretty print
@@ -29,59 +31,139 @@ func main() {
 	// 1. Create the serializer
 	serializer := services.NewJsonModelSerializer()
 
-	// 2. Create the dealer
-	dealer, err := goczmq.NewDealer("tcp://localhost:5555")
+	// 2. Create waitgroup and start threads
+	var waitgroup sync.WaitGroup
+	for i := 0; i < config.Faculties; i++ {
+		waitgroup.Add(1)
+
+		// 2.1 Create faculty thread
+		go func() {
+			defer waitgroup.Done()
+			facultyWorker(i, serializer)
+		}()
+	}
+
+	// 3. Wait for threads to finish
+	waitgroup.Wait()
+	log.Info().Msg("All threads finished")
+}
+
+func facultyWorker(id int, serializer *services.JsonModelSerializer) {
+	logger := log.With().Str("faculty", Faculties[id]).Logger()
+
+	// 1. Create the dealer
+	dealer, err := goczmq.NewDealer(config.Address)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create dealer socket")
+		logger.Fatal().Err(err).Msg("Failed to create dealer socket")
 	}
 	defer dealer.Destroy()
 
-	// 3. Create request
-	content := &models.AllocateRequest{
-		Semester: "2025-1",
-		Faculty:  "Ingeniería",
-		Programs: []models.ProgramInfo{},
+	// 2. Open log file
+	file, err := os.OpenFile(fmt.Sprintf("logs/%s.json", Faculties[id]), os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Failed to open file")
 	}
+	defer file.Close()
 
-	for i := 0; i < config.Programs; i++ {
-		info := models.ProgramInfo{
-			Name:         ProgramNames[i],
-			Classrooms:   config.Classrooms,
-			Laboratories: config.Laboratories,
+	{
+		// 3. Create request
+		content := &models.AllocateRequest{
+			Semester: "2025-1",
+			Faculty:  Faculties[id],
+			Programs: []models.ProgramInfo{},
 		}
 
-		content.Programs = append(content.Programs, info)
+		for i := 0; i < 5; i++ {
+			info := models.ProgramInfo{
+				Name:         Programs[id][i],
+				Classrooms:   7 + rand.IntN(4),
+				Laboratories: 2 + rand.IntN(3),
+			}
+
+			content.Programs = append(content.Programs, info)
+		}
+
+		request := &models.Request{
+			ID:      id,
+			Type:    "allocate",
+			Content: content,
+		}
+
+		// 4. Encode the request
+		encoded, err := serializer.Encode(request)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to serialize request")
+		}
+
+		// 5. Send the request
+		if err := dealer.SendMessage([][]byte{encoded}); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to send request")
+		}
+
+		// 6. Receive the response
+		response, err := dealer.RecvMessage()
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to receive response")
+		}
+
+		// 7. Decode the response
+		var resp models.Response
+		if err := serializer.Decode(response[0], &resp); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to deserialize response")
+		}
+
+		// 8. Print the response
+		logger.Info().Interface("response", resp).Msg("Received response")
+
+		// 9. Write to a file
+		if _, err := file.Write(response[0]); err != nil {
+			logger.Warn().Err(err).Msg("Failed to write to file")
+		}
 	}
 
-	request := &models.Request{
-		ID:      1,
-		Type:    "allocate",
-		Content: content,
-	}
+	{
+		// 10. Confirm request
+		content := &models.ConfirmRequest{
+			Semester: "2025-1",
+			Faculty:  Faculties[id],
+			Accept:   true,
+		}
 
-	// 4. Encode the request
-	encoded, err := serializer.Encode(request)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to serialize request")
-	}
+		request := &models.Request{
+			ID:      id,
+			Type:    "confirm",
+			Content: content,
+		}
 
-	// 5. Send the request
-	if err := dealer.SendMessage([][]byte{encoded}); err != nil {
-		log.Fatal().Err(err).Msg("Failed to send request")
-	}
+		// 11. Encode the request
+		encoded, err := serializer.Encode(request)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to serialize request")
+		}
 
-	// 6. Receive the response
-	response, err := dealer.RecvMessage()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to receive response")
-	}
+		// 12. Send the request
+		if err := dealer.SendMessage([][]byte{encoded}); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to send request")
+		}
 
-	// 7. Decode the response
-	var resp models.Response
-	if err := serializer.Decode(response[0], &resp); err != nil {
-		log.Fatal().Err(err).Msg("Failed to deserialize response")
-	}
+		// 13. Receive the response
+		response, err := dealer.RecvMessage()
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to receive response")
+		}
 
-	// 8. Print the response
-	log.Info().Interface("response", resp).Msg("Received response")
+		// 14. Decode the response
+		var resp models.Response
+		if err := serializer.Decode(response[0], &resp); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to deserialize response")
+		}
+
+		// 15. Print the response
+		logger.Info().Interface("response", resp).Msg("Received response")
+
+		// 16. Write to a file
+		if _, err := file.Write(response[0]); err != nil {
+			logger.Warn().Err(err).Msg("Failed to write to file")
+		}
+	}
 }
