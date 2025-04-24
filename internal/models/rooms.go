@@ -1,14 +1,16 @@
 package models
 
+type ProgramInfo struct {
+	Name         string `json:"name"`
+	Classrooms   int    `json:"classrooms"`
+	Laboratories int    `json:"laboratories"`
+}
+
 type AllocateRequest struct {
 	Semester string `json:"semester"`
 	Faculty  string `json:"faculty"`
 
-	Programs []struct {
-		Name         string `json:"name"`
-		Classrooms   int    `json:"classrooms"`
-		Laboratories int    `json:"laboratories"`
-	} `json:"programs"`
+	Programs []ProgramInfo `json:"programs"`
 }
 
 type ProgramAllocation struct {

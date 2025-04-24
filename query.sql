@@ -1,14 +1,14 @@
 -- name: GenerateRooms :exec
-CALL generate_rooms($1, $2);
+SELECT generate_rooms($1, $2);
 
 -- name: LockRooms :exec
-CALL lock_rooms($1, $2);
+SELECT lock_rooms($1, $2);
 
 -- name: AllocateClassrooms :exec
-CALL allocate_classrooms($1, $2, $3, $4);
+SELECT allocate_classrooms($1, $2, $3, $4);
 
 -- name: AllocateLaboratories :exec
-CALL allocate_laboratories($1, $2, $3, $4);
+SELECT allocate_laboratories($1, $2, $3, $4);
 
 -- name: GetRoomsByFacultyProgramSemester :many
 SELECT r.id, r.name, r.type, ra.adapted

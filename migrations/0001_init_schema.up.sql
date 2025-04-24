@@ -71,66 +71,103 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to allocate classrooms
-CREATE OR REPLACE FUNCTION allocate_classrooms(semester TEXT, faculty TEXT, program TEXT, count INT) RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION allocate_classrooms(
+    _semester TEXT,
+    _faculty TEXT,
+    _program TEXT,
+    _count INT
+)
+RETURNS VOID AS $$
 DECLARE
-    room RECORD;
+    available_room RECORD;
+    allocated_count INT := 0;
 BEGIN
-    FOR i IN 1..count LOOP
-        SELECT r INTO room
+    -- Loop through available classroom-type rooms and allocate them
+    FOR available_room IN
+        SELECT r.id
         FROM rooms r
         WHERE r.type = 'classroom'
-        AND NOT EXISTS (
-            SELECT 1
-            FROM room_allocations ra
-            WHERE ra.room_id = r.id
-            AND ra.semester = semester
-            AND ra.faculty = faculty
-        )
-        ORDER BY r.name ASC
-        LIMIT 1;
+          AND r.id NOT IN (
+              SELECT room_id
+              FROM room_allocations
+              WHERE semester = _semester
+          )
+        ORDER BY r.id
+        LIMIT _count
+    LOOP
+        -- Insert allocation
+        INSERT INTO room_allocations (
+            state, room_id, semester, faculty, program
+        ) VALUES (
+            'awaiting', available_room.id, _semester, _faculty, _program
+        );
 
-        IF NOT FOUND THEN
-            RAISE EXCEPTION 'No classrooms available for allocation';
-        END IF;
-
-        INSERT INTO room_allocations (state, room_id, semester, faculty, program)
-        VALUES ('awaiting', room.id, semester, faculty, program);
+        allocated_count := allocated_count + 1;
     END LOOP;
+
+    -- If not enough rooms were allocated, raise exception
+    IF allocated_count < _count THEN
+        RAISE EXCEPTION 'Not enough available classroom rooms to allocate (% out of %)', allocated_count, _count;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Function to allocate laboratories
-CREATE OR REPLACE FUNCTION allocate_laboratories(semester TEXT, faculty TEXT, program TEXT, count INT) RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION allocate_laboratories(
+    _semester TEXT,
+    _faculty TEXT,
+    _program TEXT,
+    _count INT
+)
+RETURNS VOID AS $$
 DECLARE
-    room RECORD;
+    allocated_count INT := 0;
+    lab_room RECORD;
+    classroom_room RECORD;
 BEGIN
-    FOR i IN 1..count LOOP
-        SELECT r INTO room
+    -- Step 1: Try to allocate as many laboratory-type rooms as available
+    FOR lab_room IN
+        SELECT r.id
         FROM rooms r
-        WHERE r.type IN ('classroom', 'laboratory')
-        AND NOT EXISTS (
-            SELECT 1
-            FROM room_allocations ra
-            WHERE ra.room_id = r.id
-            AND ra.semester = semester
-            AND ra.faculty = faculty
-        )
-        ORDER BY r.type DESC, r.name ASC
-        LIMIT 1;
-
-        IF NOT FOUND THEN
-            RAISE EXCEPTION 'No classrooms or laboratories available for allocation';
-        END IF;
-
-        INSERT INTO room_allocations (state, room_id, semester, faculty, program, adapted)
-        VALUES (
-            'awaiting',
-            room.id,
-            semester,
-            faculty,
-            program,
-            (room.type = 'classroom')::BOOLEAN
+        WHERE r.type = 'laboratory'
+          AND r.id NOT IN (
+              SELECT room_id FROM room_allocations WHERE semester = _semester
+          )
+        ORDER BY r.id
+        LIMIT _count
+    LOOP
+        INSERT INTO room_allocations (
+            state, room_id, semester, faculty, program, adapted
+        ) VALUES (
+            'awaiting', lab_room.id, _semester, _faculty, _program, FALSE
         );
+        allocated_count := allocated_count + 1;
     END LOOP;
+
+    -- Step 2: If not enough, allocate classroom-type rooms as adapted labs
+    IF allocated_count < _count THEN
+        FOR classroom_room IN
+            SELECT r.id
+            FROM rooms r
+            WHERE r.type = 'classroom'
+              AND r.id NOT IN (
+                  SELECT room_id FROM room_allocations WHERE semester = _semester
+              )
+            ORDER BY r.id
+            LIMIT (_count - allocated_count)
+        LOOP
+            INSERT INTO room_allocations (
+                state, room_id, semester, faculty, program, adapted
+            ) VALUES (
+                'awaiting', classroom_room.id, _semester, _faculty, _program, TRUE
+            );
+            allocated_count := allocated_count + 1;
+        END LOOP;
+    END IF;
+
+    -- Step 3: If still not enough rooms, raise exception
+    IF allocated_count < _count THEN
+        RAISE EXCEPTION 'Not enough rooms to allocate for labs (% out of %)', allocated_count, _count;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;

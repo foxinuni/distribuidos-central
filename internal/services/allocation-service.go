@@ -57,12 +57,12 @@ func (s *SqlcAllocationService) Allocate(ctx context.Context, request *models.Al
 	response := &models.AllocateResponse{
 		Semester: request.Semester,
 		Faculty:  request.Faculty,
-		Programs: make([]models.ProgramAllocation, len(request.Programs)),
+		Programs: []models.ProgramAllocation{},
 	}
 
-	for i, program := range request.Programs {
+	for _, program := range request.Programs {
 		// 4.1 Create a new program allocation
-		response.Programs[i] = models.ProgramAllocation{
+		program := models.ProgramAllocation{
 			Name:         program.Name,
 			Classrooms:   []string{},
 			Laboratories: []string{},
@@ -80,17 +80,20 @@ func (s *SqlcAllocationService) Allocate(ctx context.Context, request *models.Al
 		}
 
 		// 4.3 Add the allocated rooms to the response
-		for i, room := range rooms {
+		for _, room := range rooms {
 			if room.Type == repository.RoomTypeClassroom {
 				if room.Adapted {
-					response.Programs[i].Adapted = append(response.Programs[i].Adapted, room.Name)
+					program.Adapted = append(program.Adapted, room.Name)
 				} else {
-					response.Programs[i].Classrooms = append(response.Programs[i].Classrooms, room.Name)
+					program.Classrooms = append(program.Classrooms, room.Name)
 				}
 			} else {
-				response.Programs[i].Laboratories = append(response.Programs[i].Laboratories, room.Name)
+				program.Laboratories = append(program.Laboratories, room.Name)
 			}
 		}
+
+		// 4.4 Add the program allocation to the response
+		response.Programs = append(response.Programs, program)
 	}
 
 	// 5. Commit the transaction

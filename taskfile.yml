@@ -9,4 +9,7 @@ tasks:
       - go build -o build/ ./...
   migrate:
     cmds:
-      - migrate -source file:migrations -database "postgres://postgres:postgres@localhost:5432/distribuidos_central?sslmode=disable" up
+      - migrate -source file:migrations -database "postgres://postgres:postgres@127.0.0.1:5432/distribuidos_central?sslmode=disable" up
+  migrate-down:
+    cmds:
+      - migrate -source file:migrations -database "postgres://postgres:postgres@127.0.0.1:5432/distribuidos_central?sslmode=disable" down

@@ -10,14 +10,14 @@ import (
 )
 
 const allocateClassrooms = `-- name: AllocateClassrooms :exec
-CALL allocate_classrooms($1, $2, $3, $4)
+SELECT allocate_classrooms($1, $2, $3, $4)
 `
 
 type AllocateClassroomsParams struct {
-	Semester string `db:"semester" json:"semester"`
-	Faculty  string `db:"faculty" json:"faculty"`
-	Program  string `db:"program" json:"program"`
-	Count    int32  `db:"count" json:"count"`
+	Semester string `db:"_semester" json:"_semester"`
+	Faculty  string `db:"_faculty" json:"_faculty"`
+	Program  string `db:"_program" json:"_program"`
+	Count    int32  `db:"_count" json:"_count"`
 }
 
 func (q *Queries) AllocateClassrooms(ctx context.Context, arg AllocateClassroomsParams) error {
@@ -31,14 +31,14 @@ func (q *Queries) AllocateClassrooms(ctx context.Context, arg AllocateClassrooms
 }
 
 const allocateLaboratories = `-- name: AllocateLaboratories :exec
-CALL allocate_laboratories($1, $2, $3, $4)
+SELECT allocate_laboratories($1, $2, $3, $4)
 `
 
 type AllocateLaboratoriesParams struct {
-	Semester string `db:"semester" json:"semester"`
-	Faculty  string `db:"faculty" json:"faculty"`
-	Program  string `db:"program" json:"program"`
-	Count    int32  `db:"count" json:"count"`
+	Semester string `db:"_semester" json:"_semester"`
+	Faculty  string `db:"_faculty" json:"_faculty"`
+	Program  string `db:"_program" json:"_program"`
+	Count    int32  `db:"_count" json:"_count"`
 }
 
 func (q *Queries) AllocateLaboratories(ctx context.Context, arg AllocateLaboratoriesParams) error {
@@ -52,7 +52,7 @@ func (q *Queries) AllocateLaboratories(ctx context.Context, arg AllocateLaborato
 }
 
 const generateRooms = `-- name: GenerateRooms :exec
-CALL generate_rooms($1, $2)
+SELECT generate_rooms($1, $2)
 `
 
 type GenerateRoomsParams struct {
@@ -114,7 +114,7 @@ func (q *Queries) GetRoomsByFacultyProgramSemester(ctx context.Context, arg GetR
 }
 
 const lockRooms = `-- name: LockRooms :exec
-CALL lock_rooms($1, $2)
+SELECT lock_rooms($1, $2)
 `
 
 type LockRoomsParams struct {

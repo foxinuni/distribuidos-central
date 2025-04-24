@@ -87,7 +87,7 @@ func (s *Server) Start() error {
 				return
 			case request := <-s.socket.RecvChan:
 				// Check if the channel is closed
-				log.Debug().Msgf("Received request from client: %v", request)
+				// log.Debug().Msgf("Received request from client: %v", request)
 				s.requests <- request
 			}
 		}
@@ -122,6 +122,8 @@ func (s *Server) worker(number int) {
 	}()
 
 	for request := range s.requests {
+		log.Debug().Msgf("Received request from client (worker: %d, size: %d, identity: %v)", number, len(request[1]), request[0])
+
 		// Parse the request
 		req, identity, err := s.parseRequest(request)
 		if err != nil {

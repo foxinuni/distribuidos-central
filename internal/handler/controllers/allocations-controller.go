@@ -6,6 +6,7 @@ import (
 
 	"github.com/foxinuni/distribuidos-central/internal/models"
 	"github.com/foxinuni/distribuidos-central/internal/services"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rs/zerolog/log"
 )
 
@@ -20,9 +21,9 @@ func NewAllocationsController(service services.AllocationService) *AllocationsCo
 }
 
 func (c *AllocationsController) Allocate(body interface{}) (interface{}, error) {
-	req, ok := body.(*models.AllocateRequest)
-	if !ok {
-		return nil, fmt.Errorf("invalid request format: expected *models.AllocateRequest, got %T", body)
+	req := &models.AllocateRequest{}
+	if err := mapstructure.Decode(body, req); err != nil {
+		return nil, fmt.Errorf("failed to decode request: %w", err)
 	}
 
 	log.Info().Msgf("Received AllocateRequest: %+v", req)

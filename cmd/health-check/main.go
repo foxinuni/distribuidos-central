@@ -33,6 +33,7 @@ func main() {
 		ID:   1,
 		Type: "health-check",
 	}
+	
 	encoded, err := serializer.Encode(request)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to serialize request")

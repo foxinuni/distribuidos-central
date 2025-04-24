@@ -21,7 +21,7 @@ func init() {
 	// Load config from flags
 	flag.IntVar(&config.Port, "port", 5555, "Port to listen on")
 	flag.IntVar(&config.Workers, "workers", runtime.NumCPU(), "Number of worker goroutines")
-	flag.StringVar(&config.DatabaseURL, "database", "postgresql://postgres:postgres@localhost:5432/distribuidos-central?sslmode=disable", "Database URL")
+	flag.StringVar(&config.DatabaseURL, "database", "postgresql://postgres:postgres@127.0.0.1:5432/distribuidos_central?sslmode=disable", "Database URL")
 	flag.Parse()
 
 	// Set up zerolog logger for debug and pretty print
@@ -35,7 +35,11 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to database")
 	}
-	defer pool.Close()
+
+	// 1.1 Ping database
+	if err := pool.Ping(context.Background()); err != nil {
+		log.Fatal().Err(err).Msg("Failed to ping database")
+	}
 
 	// 2. Construct services for server
 	serializerService := services.NewJsonModelSerializer()

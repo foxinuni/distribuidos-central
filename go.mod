@@ -9,6 +9,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/zerolog v1.34.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
