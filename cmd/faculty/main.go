@@ -17,7 +17,6 @@ import (
 var config Config
 
 func init() {
-	flag.IntVar(&config.Port, "port", 5555, "Port to listen on")
 	flag.IntVar(&config.Faculties, "faculties", 10, "Number of facultires")
 	flag.StringVar(&config.Address, "address", "tcp://127.0.0.1:5555", "The server address")
 	flag.Parse()

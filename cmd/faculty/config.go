@@ -1,7 +1,6 @@
 package main
 
 type Config struct {
-	Port      int
 	Faculties int
 	Address   string
 }

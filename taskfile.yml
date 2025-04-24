@@ -1,5 +1,4 @@
 version: '3'
-
 tasks:
   sqlc:
     cmds:
@@ -9,7 +8,7 @@ tasks:
       - go build -o build/ ./...
   migrate:
     cmds:
-      - migrate -source file:migrations -database "postgres://postgres:postgres@127.0.0.1:5432/distribuidos_central?sslmode=disable" up
+      - migrate -source file:migrations -database "${DATABASE_URL}" up
   migrate-down:
     cmds:
-      - migrate -source file:migrations -database "postgres://postgres:postgres@127.0.0.1:5432/distribuidos_central?sslmode=disable" down
+      - migrate -source file:migrations -database "${DATABASE_URL}" down

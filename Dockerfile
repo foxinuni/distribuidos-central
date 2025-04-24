@@ -29,6 +29,9 @@ COPY . .
 RUN task sqlc
 RUN task build
 
+# Add build directory to PATH
+ENV PATH="/app/build:${PATH}"
+
 # Expose the required port
 EXPOSE 5555
 
