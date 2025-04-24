@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  sqlc:
+    cmds:
+      - sqlc generate
+  build:
+    cmds:
+      - go build -o build/ ./...
+  migrate:
+    cmds:
+      - migrate -source file:migrations -database "postgres://postgres:postgres@localhost:5432/distribuidos_central?sslmode=disable" up

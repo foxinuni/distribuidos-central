@@ -1,20 +1,26 @@
 package models
 
-type SolicitudAulas struct {
-	Facultad     string `json:"facultad"`
-	Aulas        int    `json:"aulas"`
-	Laboratorios int    `json:"laboratorios"`
+type AllocateRequest struct {
+	Semester string `json:"semester"`
+	Faculty  string `json:"faculty"`
+
+	Programs []struct {
+		Name         string `json:"name"`
+		Classrooms   int    `json:"classrooms"`
+		Laboratories int    `json:"laboratories"`
+	} `json:"programs"`
 }
 
-type RespuestaAulas struct {
-	Aulas []struct {
-		Edificio int  `json:"edificio"`
-		Numero   int  `json:"numero"`
-		Adaptado bool `json:"adaptado"`
-	} `json:"aulas"`
+type ProgramAllocation struct {
+	Name         string   `json:"name"`
+	Classrooms   []string `json:"classrooms"`
+	Laboratories []string `json:"laboratories"`
+	Adapted      []string `json:"adapted"`
+}
 
-	Laboratorios []struct {
-		Edificio int `json:"edificio"`
-		Numero   int `json:"numero"`
-	} `json:"laboratorios"`
+type AllocateResponse struct {
+	Semester string `json:"semester"`
+	Faculty  string `json:"faculty"`
+
+	Programs []ProgramAllocation `json:"programs"`
 }

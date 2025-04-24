@@ -1,0 +1,19 @@
+version: "2"
+sql:
+  - schema: "migrations"       # Path to your migration files
+    queries: "query.sql"         # Path to your .sql query files
+    engine: "postgresql"
+    gen:
+      go:
+        package: "repository"
+        out: "internal/repository"        # Where generated Go code goes
+        emit_prepared_queries: false
+        emit_interface: false
+        emit_exact_table_names: false
+
+        # Optional (if you want JSON tags for structs):
+        emit_json_tags: true
+        emit_db_tags: true
+
+        # Use pgxv5 pool
+        sql_package: "pgx/v5"
