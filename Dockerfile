@@ -33,7 +33,7 @@ RUN task build
 ENV PATH="/app/build:${PATH}"
 
 # Expose the required port
-EXPOSE 5555
+EXPOSE 5556
 
 # Run the executable
 CMD ["./build/server"]

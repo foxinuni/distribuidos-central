@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"math/rand/v2"
@@ -9,9 +10,9 @@ import (
 
 	"github.com/foxinuni/distribuidos-central/internal/models"
 	"github.com/foxinuni/distribuidos-central/internal/services"
+	"github.com/go-zeromq/zmq4"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/zeromq/goczmq.v4"
 )
 
 var config Config
@@ -27,6 +28,8 @@ func init() {
 }
 
 func main() {
+	log.Info().Msgf("Starting faculty client with %d faculties (for: %q)", config.Faculties, config.Address)
+
 	// 1. Create the serializer
 	serializer := services.NewJsonModelSerializer()
 
@@ -51,11 +54,14 @@ func facultyWorker(id int, serializer *services.JsonModelSerializer) {
 	logger := log.With().Str("faculty", Faculties[id]).Logger()
 
 	// 1. Create the dealer
-	dealer, err := goczmq.NewDealer(config.Address)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to create dealer socket")
+	dealer := zmq4.NewReq(context.Background())
+	defer dealer.Close()
+
+	if err := dealer.Dial(config.Address); err != nil {
+		logger.Fatal().Err(err).Msg("Failed to connect to server")
 	}
-	defer dealer.Destroy()
+
+	log.Info().Msgf("Starting faculty worker for %s", Faculties[id])
 
 	// 2. Open log file
 	file, err := os.OpenFile(fmt.Sprintf("logs/%s.json", Faculties[id]), os.O_CREATE|os.O_WRONLY, 0644)
@@ -95,19 +101,19 @@ func facultyWorker(id int, serializer *services.JsonModelSerializer) {
 		}
 
 		// 5. Send the request
-		if err := dealer.SendMessage([][]byte{encoded}); err != nil {
+		if err := dealer.Send(zmq4.NewMsgFrom([][]byte{encoded}...)); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to send request")
 		}
 
 		// 6. Receive the response
-		response, err := dealer.RecvMessage()
+		response, err := dealer.Recv()
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to receive response")
 		}
 
 		// 7. Decode the response
 		var resp models.Response
-		if err := serializer.Decode(response[0], &resp); err != nil {
+		if err := serializer.Decode(response.Frames[0], &resp); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to deserialize response")
 		}
 
@@ -115,7 +121,7 @@ func facultyWorker(id int, serializer *services.JsonModelSerializer) {
 		logger.Info().Interface("response", resp).Msg("Received response")
 
 		// 9. Write to a file
-		if _, err := file.Write(response[0]); err != nil {
+		if _, err := file.Write(response.Frames[0]); err != nil {
 			logger.Warn().Err(err).Msg("Failed to write to file")
 		}
 	}
@@ -141,19 +147,19 @@ func facultyWorker(id int, serializer *services.JsonModelSerializer) {
 		}
 
 		// 12. Send the request
-		if err := dealer.SendMessage([][]byte{encoded}); err != nil {
+		if err := dealer.Send(zmq4.NewMsgFrom([][]byte{encoded}...)); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to send request")
 		}
 
 		// 13. Receive the response
-		response, err := dealer.RecvMessage()
+		response, err := dealer.Recv()
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to receive response")
 		}
 
 		// 14. Decode the response
 		var resp models.Response
-		if err := serializer.Decode(response[0], &resp); err != nil {
+		if err := serializer.Decode(response.Frames[0], &resp); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to deserialize response")
 		}
 
@@ -161,7 +167,7 @@ func facultyWorker(id int, serializer *services.JsonModelSerializer) {
 		logger.Info().Interface("response", resp).Msg("Received response")
 
 		// 16. Write to a file
-		if _, err := file.Write(response[0]); err != nil {
+		if _, err := file.Write(response.Frames[0]); err != nil {
 			logger.Warn().Err(err).Msg("Failed to write to file")
 		}
 	}
