@@ -54,7 +54,7 @@ func facultyWorker(id int, serializer *services.JsonModelSerializer) {
 	logger := log.With().Str("faculty", Faculties[id]).Logger()
 
 	// 1. Create the dealer
-	dealer := zmq4.NewReq(context.Background())
+	dealer := zmq4.NewDealer(context.Background())
 	defer dealer.Close()
 
 	if err := dealer.Dial(config.Address); err != nil {

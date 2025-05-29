@@ -22,11 +22,14 @@ func init() {
 	flag.IntVar(&config.Port, "port", 5555, "Port to listen on")
 	flag.IntVar(&config.Workers, "workers", runtime.NumCPU(), "Number of worker goroutines")
 	flag.StringVar(&config.DatabaseURL, "database", "postgresql://postgres:postgres@127.0.0.1:5432/distribuidos_central?sslmode=disable", "Database URL")
+	flag.BoolVar(&config.Debug, "debug", false, "Enable debug logging")
 	flag.Parse()
 
 	// Set up zerolog logger for debug and pretty print
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	if config.Debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 }
 
 func main() {
