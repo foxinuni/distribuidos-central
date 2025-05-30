@@ -1,6 +1,7 @@
 # Central y Facultades
 
-El siguiente codigo compila el proxy server utilizado como load
+El siguiente código compila los programas de la central y las facultades.  
+En este caso, la manera más fácil de compilar es a través de Docker.
 
 ### Dependencias
 
